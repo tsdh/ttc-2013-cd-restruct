@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="ASCII"?>
+<My:model xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:My="http://newmm" xsi:schemaLocation="http://newmm ../newmm/newmm.ecore">
+<propertys xsi:type="My:Property" name="x"  type="//@types.0" />
+<propertys xsi:type="My:Property" name="x"  type="//@types.0" />
+<propertys xsi:type="My:Property" name="y"  type="//@types.0" />
+<propertys xsi:type="My:Property" name="y"  type="//@types.0" />
+<entitys xsi:type="My:Entity" name="A"  ownedAttribute = "" specialization = " //@generalizations.0 //@generalizations.1 //@generalizations.2" generalization = "" />
+<entitys xsi:type="My:Entity" name="B"  ownedAttribute = "" specialization = " //@generalizations.3 //@generalizations.4 //@generalizations.5" generalization = "" />
+<entitys xsi:type="My:Entity" name="C"  ownedAttribute = " //@propertys.0" specialization = "" generalization = " //@generalizations.0" />
+<entitys xsi:type="My:Entity" name="D"  ownedAttribute = " //@propertys.1" specialization = "" generalization = " //@generalizations.1 //@generalizations.3" />
+<entitys xsi:type="My:Entity" name="E"  ownedAttribute = " //@propertys.2" specialization = "" generalization = " //@generalizations.2 //@generalizations.4" />
+<entitys xsi:type="My:Entity" name="F"  ownedAttribute = " //@propertys.3" specialization = "" generalization = " //@generalizations.5" />
+<generalizations xsi:type="My:Generalization" general="//@entitys.0" specific="//@entitys.2" />
+<generalizations xsi:type="My:Generalization" general="//@entitys.0" specific="//@entitys.3" />
+<generalizations xsi:type="My:Generalization" general="//@entitys.0" specific="//@entitys.4" />
+<generalizations xsi:type="My:Generalization" general="//@entitys.1" specific="//@entitys.3" />
+<generalizations xsi:type="My:Generalization" general="//@entitys.1" specific="//@entitys.4" />
+<generalizations xsi:type="My:Generalization" general="//@entitys.1" specific="//@entitys.5" />
+<types xsi:type="My:Type" name="Integer"  />
+</My:model>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="ASCII"?>
+<My:model xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:My="http://newmm" xsi:schemaLocation="http://newmm ../newmm/newmm.ecore">
+<propertys xsi:type="My:Property" name="x"  type="//@types.0" />
+<propertys xsi:type="My:Property" name="y"  type="//@types.0" />
+<propertys xsi:type="My:Property" name="y"  type="//@types.0" />
+<entitys xsi:type="My:Entity" name="C"  ownedAttribute = "" specialization = "" generalization = " //@generalizations.0" />
+<entitys xsi:type="My:Entity" name="D"  ownedAttribute = "" specialization = "" generalization = " //@generalizations.1" />
+<entitys xsi:type="My:Entity" name="E"  ownedAttribute = "" specialization = "" generalization = " //@generalizations.2" />
+<entitys xsi:type="My:Entity" name="F"  ownedAttribute = " //@propertys.2" specialization = "" generalization = "" />
+<entitys xsi:type="My:Entity" name="C_3_x"  ownedAttribute = " //@propertys.0" specialization = " //@generalizations.0 //@generalizations.3" generalization = "" />
+<entitys xsi:type="My:Entity" name="C_3_x_2_y"  ownedAttribute = " //@propertys.1" specialization = " //@generalizations.1 //@generalizations.2" generalization = " //@generalizations.3" />
+<generalizations xsi:type="My:Generalization" general="//@entitys.4" specific="//@entitys.0" />
+<generalizations xsi:type="My:Generalization" general="//@entitys.5" specific="//@entitys.1" />
+<generalizations xsi:type="My:Generalization" general="//@entitys.5" specific="//@entitys.2" />
+<generalizations xsi:type="My:Generalization" general="//@entitys.4" specific="//@entitys.5" />
+<types xsi:type="My:Type" name="Integer"  />
+</My:model>

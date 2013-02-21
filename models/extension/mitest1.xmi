@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="ASCII"?>
+<My:model xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:My="http://newmm" xsi:schemaLocation="http://newmm ../newmm/newmm.ecore">
+<propertys xsi:type="My:Property" name="x"  type="//@types.0" />
+<propertys xsi:type="My:Property" name="x"  type="//@types.0" />
+<entitys xsi:type="My:Entity" name="A"  ownedAttribute = "" specialization = " //@generalizations.0 //@generalizations.1" generalization = "" />
+<entitys xsi:type="My:Entity" name="B"  ownedAttribute = "" specialization = " //@generalizations.2 //@generalizations.3" generalization = "" />
+<entitys xsi:type="My:Entity" name="C"  ownedAttribute = " //@propertys.0" specialization = "" generalization = " //@generalizations.0 //@generalizations.2" />
+<entitys xsi:type="My:Entity" name="D"  ownedAttribute = " //@propertys.1" specialization = "" generalization = " //@generalizations.1 //@generalizations.3" />
+<generalizations xsi:type="My:Generalization" general="//@entitys.0" specific="//@entitys.2" />
+<generalizations xsi:type="My:Generalization" general="//@entitys.0" specific="//@entitys.3" />
+<generalizations xsi:type="My:Generalization" general="//@entitys.1" specific="//@entitys.2" />
+<generalizations xsi:type="My:Generalization" general="//@entitys.1" specific="//@entitys.3" />
+<types xsi:type="My:Type" name="Integer"  />
+</My:model>

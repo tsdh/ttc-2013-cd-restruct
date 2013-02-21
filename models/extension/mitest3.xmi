@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="ASCII"?>
+<My:model xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:My="http://newmm" xsi:schemaLocation="http://newmm ../newmm/newmm.ecore">
+<propertys xsi:type="My:Property" name="x"  type="//@types.0" />
+<propertys xsi:type="My:Property" name="x"  type="//@types.0" />
+<propertys xsi:type="My:Property" name="x"  type="//@types.0" />
+<propertys xsi:type="My:Property" name="y"  type="//@types.0" />
+<propertys xsi:type="My:Property" name="y"  type="//@types.0" />
+<propertys xsi:type="My:Property" name="y"  type="//@types.0" />
+<entitys xsi:type="My:Entity" name="C"  ownedAttribute = " //@propertys.0" specialization = "" generalization = "" />
+<entitys xsi:type="My:Entity" name="D"  ownedAttribute = " //@propertys.1 //@propertys.3" specialization = "" generalization = "" />
+<entitys xsi:type="My:Entity" name="E"  ownedAttribute = " //@propertys.2 //@propertys.4" specialization = "" generalization = "" />
+<entitys xsi:type="My:Entity" name="F"  ownedAttribute = " //@propertys.5" specialization = "" generalization = "" />
+<types xsi:type="My:Type" name="Integer"  />
+</My:model>
