@@ -7,6 +7,7 @@
 \usepackage{verbatim}
 \usepackage{amsmath}
 \usepackage{graphicx}
+\usepackage{footmisc}
 \usepackage[a4paper,top=2cm,bottom=2cm,left=2.5cm,right=2.5cm]{geometry}
 
 \makeatletter
@@ -96,8 +97,10 @@ syntaxes to users.  Patterns and transformations written in these internal DSLs
 get transformed to usual Clojure code using the FunnyQT querying and model
 manipulation APIs by the Clojure compiler.
 
-For solving the tasks of this transformation case, only FunnyQT's plain
-querying and model manipulation APIs have been used.
+For solving the tasks of this transformation case\footnote{This FunnyQT
+  solution is available at \url{https://github.com/tsdh/ttc-2013-cd-restruct}
+  and on SHARE (Section~\ref{sec:run-transformation})\label{fn:github}}, only
+FunnyQT's plain querying and model manipulation APIs have been used.
 
 
 \section{The Core Task}
@@ -661,9 +664,9 @@ polymorphic method calls and instance tests might deliver unexpected results.
 \section{Running the Transformation on SHARE}
 \label{sec:run-transformation}
 
-The FunnyQT solution to this case (and the other cases) are installed on the
-SHARE image \verb|Ubuntu12LTS_TTC13::FunnyQT.vdi|.  Running the solution is
-simple.
+The FunnyQT solution to this case\footref{fn:github} (and the other cases) are
+installed on the SHARE image \verb|Ubuntu12LTS_TTC13::FunnyQT.vdi|.  Running
+the solution is simple.
 
 \begin{compactenum}
 \item Open a terminal.

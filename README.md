@@ -10,9 +10,7 @@ extension transformations.  The source code file
 invocations of the transformations on the provided test cases plus some
 constraints validating the transformation results.
 
-## Run it
-
-TODO: Write me!
+Have a look at the [solution description](https://github.com/tsdh/ttc-2013-cd-restruct/blob/master/desc/ttc13-funnyqt-cd-restruct.pdf?raw=true).
 
 ## License
 
