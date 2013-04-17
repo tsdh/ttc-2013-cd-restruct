@@ -249,8 +249,8 @@ sequence to a set.
 The \verb|filter-by-properties| function in
 Listing~\ref{lst:filter-by-properties} gets a collection of
 \verb|[propname, type]| tuples via its \verb|pnts| parameter, and a collection
-of entities via its \verb|classes| parameter.  It returns the subset of
-\verb|classes|, where every entity defines all of the given properties with
+of entities via its \verb|entities| parameter.  It returns the subset of
+\verb|entities|, where every entity defines all of the given properties with
 identical types.
 
 \begin{listing}[htbp]
@@ -454,7 +454,7 @@ That is, neighboring items with equal entity sets are collapsed into one.
 \label{sec:restructuring-rules}
 
 In this section, the three restructuring rules are explained.  With the
-\verb|common-props| function in place, one observations can be made.  Rule 1
+\verb|common-props| function in place, some observations can be made.  Rule 1
 and rule 2 are nearly identical.  When looking for shared properties in a set
 of subclasses, if there are properties shared by all of them, this is of course
 the maximal set, too.  The only difference is that for rule 1, no new entity
