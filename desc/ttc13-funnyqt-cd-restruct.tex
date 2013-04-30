@@ -9,6 +9,8 @@
 \usepackage{graphicx}
 \usepackage{footmisc}
 \usepackage[a4paper,top=2cm,bottom=2cm,left=2.5cm,right=2.5cm]{geometry}
+\usepackage{placeins}
+
 
 \makeatletter
 \def\verbatim@font{\ttfamily\small}
@@ -207,7 +209,7 @@ determined superclass \verb|super|.
   \label{lst:make-generalization}
 \end{listing}
 
-The \verb|make-entity!| function is Listing~\ref{lst:make-entity} creates a new
+The \verb|make-entity!| function in Listing~\ref{lst:make-entity} creates a new
 \verb|Entity| and assigns it to the root \verb|model| object \verb|mo|.  Its
 name is set to the string ``NewClass'' followed by some number.  \verb|gensym|
 is a tool used mostly for metaprogramming.  It returns a guaranteed unique
@@ -431,9 +433,9 @@ Finally, this set is mangled by the local \verb|collapse| function.  When the
 provided sorted set \verb|aes| contains a first entry (line 44), the set is
 split in two parts \verb|s| and \verb|r|, where \verb|s| contains all the items
 that have the very same entities set as the first item.  The result of the
-function is a list\footnote{In fact, the result is no list but a lazy sequence
-  because the recursive call is wrapped with \textsf{lazy-seq}.  A lazy seq is
-  similar to a list, but the elements in its rest are not computed
+function is a list\footnote{In fact, the result is not a list but a lazy
+  sequence because the recursive call is wrapped with \textsf{lazy-seq}.  A
+  lazy seq is similar to a list, but the elements in its rest are not computed
   (\emph{realized}) before someone tries to access them.  That is, the rest of
   a lazy sequence is actually a closure that knows how to realize the sequence
   one step further.}  where the head is a tuple \verb|[pnts entities]|, where
@@ -752,6 +754,7 @@ tests.
     \textbf{Development effort} & approx. 8 hours (solution) + 2 hours (tests)\\
     \textbf{Execution time}     & 6 secs for the largest model (\verb|testcase2_10000.xmi|)\\
     \textbf{History of use}     & approx. 1 year\\
+    \textbf{No. of case studies}& published: the 3 TTC13 cases, unpublished: approx. 20\\
     \textbf{Maximum capability} & approx. 2 million elements on SHARE\\
     \hline
   \end{tabular}
@@ -807,6 +810,7 @@ inheritance rule has only little influence on the execution times.
   FunnyQT solution.
 \end{sloppypar}
 
+\FloatBarrier
 
 \bibliographystyle{alpha}
 \bibliography{ttc13-funnyqt-cd-restruct}
