@@ -42,64 +42,25 @@
 \maketitle
 
 \begin{abstract}
-  This paper describes the FunnyQT solution to the TTC 2013 Class Diagram
-  Restructuring Transformation Case.
-
   FunnyQT is a model querying and model transformation library for the
-  functional Lisp-dialect Clojure.  It supports the modeling frameworks JGraLab
-  and EMF natively, and it is designed to be extensible towards supporting
-  other frameworks as well.
+  functional Lisp-dialect Clojure providing a rich and efficient querying and
+  transformation API.
 
-  FunnyQT provides a rich and efficient querying API, a model manipulation API,
-  and on top of those, there are several sub-APIs for implementing several
-  kinds of transformations such as ATL-like model transformations or programmed
-  graph transformations.
-
-  This solution tackles the case algorithmically using FunnyQT's plain querying
-  and model manipulation APIs.
+  This paper describes the FunnyQT solution to the TTC 2013 Class Diagram
+  Restructuring Transformation Case.  This solution and the GROOVE solution
+  share the \emph{best overall solution award} for this case.
 \end{abstract}
 
 \section{Introduction}
 \label{sec:introduction}
 
-\emph{FunnyQT} is a new model querying and transformation approach.  Instead of
-inventing yet another language with its own concrete syntax and semantics, it
-is implemented as an API for the functional, JVM-based Lisp-dialect
-Clojure\footnote{\url{http://clojure.org/}}.  It's JVM-basing provides
-wrapper-free access to all existing Clojure and Java libraries, and to other
-tools in the rich Java ecosystem such as profilers.
-
-FunnyQT natively supports the de-facto standard modeling framework EMF
-\cite{Steinberg2008EEM} and the TGraph modeling framework
-JGraLab\footnote{\url{http://jgralab.uni-koblenz.de}}, and it is designed to be
-extensible towards other frameworks as well.
-
-FunnyQT's API is split up in several sub-APIs.  On the lowest level there is a
-core API for any supported modeling framework providing functions for loading
-and storing models, accessing, creating, and deleting model elements, and
-accessing and setting attribute values.  These core APIs mainly provide a
-concise and expressive interface to the native Java APIs of the frameworks.  On
-top of that, there's a generic API providing the subset of core functionality
-that is common to both supported frameworks such as navigation via role names,
-access to and manipulation of element properties, or functionality concerned
-with typing imposed by metamodels.  Furthermore, there is a generic quering API
-providing important querying concepts such as quantified expressions, regular
-path expressions, or pattern matching.
-
-Based on those querying and model manipulation APIs, there are several sub-APIs
-for implementing different kinds of transformations.  For example, there is a
-model transformation API similar to ATL \cite{ATL05} or ETL
-\cite{booklet:epsilon}, or there is an in-place transformation API for writing
-programmed graph transformations similar to GrGen.NET
-\cite{manual:GrGenManual}.
-
-Especially the pattern matching API and the transformation APIs make use of
-Clojure's Lisp-inherited metaprogramming facilities
-\cite{Graham1993OnLisp,Hoyte08LoL} in that they provide macros creating
-internal DSLs \cite{book:Fowler2010DSL} providing concise, boilerplate-free
-syntaxes to users.  Patterns and transformations written in these internal DSLs
-get transformed to usual Clojure code using the FunnyQT querying and model
-manipulation APIs by the Clojure compiler.
+\emph{FunnyQT} is a new model querying and transformation approach which is
+implemented as an API for the functional, JVM-based Lisp-dialect Clojure.  It
+provides several sub-APIs for implementing different kinds of queries and
+transformations.  For example, there is a model-to-model transformation API,
+and there is an in-place transformation API for writing programmed graph
+transformations.  FunnyQT currently supports EMF and JGraLab models, and it can
+be extended to other modeling frameworks, too.
 
 For solving the tasks of this transformation case\footnote{This FunnyQT
   solution is available at \url{https://github.com/tsdh/ttc-2013-cd-restruct}
@@ -116,119 +77,24 @@ finding sets of pullable properties and sorting them heuristically in order to
 achieve effective results, the three restructuring rules depicted in the case
 description \cite{cdrestructcasedesc}, and a last function composing the rules
 in order to realized the transformation.  This solution description starts with
-the helpers, Section~\ref{sec:restructuring-heuristics} dives into the details
-of the function finding pullable properties,
-Section~\ref{sec:restructuring-rules} explains the restructuring rules, and
-Section~\ref{sec:transf-funct} describes the transformation function.
+the helpers, then dives into the details of the function finding pullable
+properties, then explains the restructuring rules, and finally describes the
+transformation function.
 
-\subsection{Helper Functions}
-\label{sec:helper-functions}
+\paragraph{Helper Functions.}
 
 The helper functions discussed in this section are quite simple and factor out
-functionality that is used at several places in the rules.
-
-The function \verb|add-prop!| shown in Listing~\ref{lst:add-prop} receives the
-single root \verb|model| object \verb|mo|, an \verb|Entity e|, a property name
-\verb|pn|, and a \verb|Type t|.  It creates a new \verb|Property p| with the
-given name and type, and assigns it to both the given entity and model object.
-
-\begin{listing}[htbp]
-  \begin{clojurecode*}{firstnumber=1}
-(defn add-prop! [mo e pn t]
-  (let [p (ecreate! 'Property)]
-    (eadd! mo :propertys p)
-    (eset! p :name pn)
-    (eset! p :type t)
-    (eadd! e :ownedAttribute p)))
-  \end{clojurecode*}
-  \caption{A function for adding a property to an entity}
-  \label{lst:add-prop}
-\end{listing}
-
-The \verb|delete-prop!| function depicted in Listing~\ref{lst:delete-prop}
-takes an \verb|Entity e|, and a property name \verb|pn|.  It then selects the
-\verb|Property p| in the \verb|ownedAttribute| list of \verb|e| which has this
-name and deletes it.
-
-\begin{listing}[htbp]
-  \begin{clojurecode*}{firstnumber=7}
-(defn delete-prop! [e pn]
-  (let [p (first (filter #(= pn (eget % :name))
-                         (eget e :ownedAttribute)))]
-    (edelete! p)
-    (eremove! e :ownedAttribute p)))
-  \end{clojurecode*}
-  \caption{A function for deleting a property from an entity}
-  \label{lst:delete-prop}
-\end{listing}
-
-The function \verb|pull-up| depicted in Listing~\ref{lst:pull-up} combines
-\verb|add-prop!| and \verb|delete-prop!|.  It receives the root \verb|model|
-object \verb|mo|, a set of \verb|[propname, type]| tuples \verb|pnts|, a set of
-entities \verb|froms| that have these properties, and a single entity
-\verb|to|.  For every \verb|[propname, type]| tuple in \verb|pnts|, it creates a new
-property in \verb|to|, and deletes the corresponding properties in all
-\verb|froms|.
-
-\begin{listing}[htbp]
-  \begin{clojurecode*}{firstnumber=12}
-(defn pull-up [mo pnts froms to]
-  (doseq [[pn t] pnts]
-    (add-prop! mo to pn t)
-    (doseq [s froms]
-      (delete-prop! s pn)))
-  true)
-  \end{clojurecode*}
-  \caption{A function for pulling up properties}
-  \label{lst:pull-up}
-\end{listing}
-
-Clojure's \verb|doseq| is similar to the \emph{enhanced for loop} in Java, that
-is, the elements of an iterable object are bound to a variable one after the
-other, and the body is executed for side-effects only.  One interesting
-difference visible in line 13 is that \verb|doseq| allows for
-\emph{destructuring}.  In Lisp, destructuring means binding the contents of
-some structured object directly by imitating the object's structure.  Since
-\verb|pnts| is a set of \verb|[propname, type]| tuples, in every iteration the
-property name is bound directly to \verb|pn|, and the type is directly bound to
-\verb|t|.\footnote{Destructuring is supported by all binding forms including
-  \textsf{let}, \textsf{doseq}, \textsf{loop}, the sequence comprehension
-  \textsf{for}, and function parameter vectors.}
-
-The next helper, \verb|make-generalization!| shown in
-Listing~\ref{lst:make-generalization}, is very simple again.  It creates a new
-\verb|Generalization| relationship between an entity \verb|sub| and its
-determined superclass \verb|super|.
-
-\begin{listing}[htbp]
-  \begin{clojurecode*}{firstnumber=18}
-(defn make-generalization! [mo sub super]
-  (let [gen (ecreate! 'Generalization)]
-    (eadd! mo :generalizations gen)
-    (eset! gen :general super)
-    (eset! gen :specific sub)))
-  \end{clojurecode*}
-  \caption{A function for creating a generalization relationship}
-  \label{lst:make-generalization}
-\end{listing}
-
-The \verb|make-entity!| function in Listing~\ref{lst:make-entity} creates a new
-\verb|Entity| and assigns it to the root \verb|model| object \verb|mo|.  Its
-name is set to the string ``NewClass'' followed by some number.  \verb|gensym|
-is a tool used mostly for metaprogramming.  It returns a guaranteed unique
-symbol whose name starts with the given prefix and gets a number appended.
-Here, this symbol is just converted to a string.
-
-\begin{listing}[htbp]
-  \begin{clojurecode*}{firstnumber=23}
-(defn make-entity! [mo]
-  (let [e (ecreate! 'Entity)]
-    (eadd! mo :entitys e)
-    (eset! e :name (str (gensym "NewClass")))))
-  \end{clojurecode*}
-  \caption{A function for creating an entity}
-  \label{lst:make-entity}
-\end{listing}
+functionality that is used at several places in the rules.  There are several
+very simple helpers that are not explained in detail.  \verb|add-prop!| adds a
+new \verb|Property| with some given name and \verb|Type| to some given
+\verb|Entity|.  \verb|delete-prop!| deletes the property identified by a given
+name from a given entity.  The \verb|pull-up| function gets a list of
+\verb|[prop-name type]| tuples, a set of source entities, and a target entity.
+It then adds new properties to the target entity and deletes them from the
+source entities.  Lastly, there's \verb|make-generalization!| which creates a
+new \verb|Generalization| between a sub- and its super-entity, and there's
+\verb|make-entity!| that creates a new \verb|Entity| and sets its name to
+``NewClass'' concatenated with some unique integer.
 
 The function \verb|prop-type-set| shown in Listing~\ref{lst:prop-type-set} gets
 an \verb|Entity e| and returns its set of \verb|[propname, type]| tuples, i.e.,
@@ -281,8 +147,7 @@ local function of arity 1 is defined that checks if its single argument, a
 \verb|e|.
 
 
-\subsection{Restructuring Heuristics}
-\label{sec:restructuring-heuristics}
+\paragraph{Restructuring Heuristics.}
 
 The rules of this solution don't pull up one attribute at a time, but instead
 they pull up the \emph{maximal set of properties that are shared by a maximum
@@ -455,8 +320,7 @@ example again, the result structure is as follows.
 That is, neighboring items with equal entity sets are collapsed into one.
 
 
-\subsection{Restructuring Rules}
-\label{sec:restructuring-rules}
+\paragraph{Restructuring Rules.}
 
 In this section, the three restructuring rules are explained.  With the
 \verb|common-props| function in place, some observations can be made.  Rule 1
@@ -567,8 +431,7 @@ It simply calls the helper providing \verb|nil| as superclass parameter, and
 the set of top-level classes.
 
 
-\subsection{The Transformation Function}
-\label{sec:transf-funct}
+\paragraph{The Transformation Function.}
 
 The function \verb|pull-up-attributes| shown in
 Listing~\ref{lst:pull-up-attributes} implements the overall transformation by
@@ -607,8 +470,8 @@ explained in Section~\ref{sec:extension-task} is applied.  Finally, the
 \section{The Multiple Inheritance Extension Task}
 \label{sec:extension-task}
 
-The rules discussed in Section~\ref{sec:restructuring-rules} work well also if
-the initial model already contains multiple inheritance.  However, they won't
+The rules discussed in Section~\ref{sec:core-task} work well also if the
+initial model already contains multiple inheritance.  However, they won't
 create new classes that specialize more than one single superclass.
 
 To exploit the presence of multiple inheritance in order to restructure the
