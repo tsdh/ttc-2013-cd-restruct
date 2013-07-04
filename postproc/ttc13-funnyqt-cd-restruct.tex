@@ -33,7 +33,7 @@
 \displaywidowpenalty = 10000
 
 %% Reduce the space between image and captions
-\setlength\abovecaptionskip{0.2cm}
+\setlength\abovecaptionskip{0cm}
 \setlength\belowcaptionskip{0cm}
 
 
@@ -94,11 +94,13 @@ It then adds new properties to the target entity and deletes them from the
 source entities.  Lastly, there's \verb|make-generalization!| which creates a
 new \verb|Generalization| between a sub- and its super-entity, and there's
 \verb|make-entity!| that creates a new \verb|Entity| and sets its name to
-``NewClass'' concatenated with some unique integer.
+``NewClass'' concatenated with some unambiguous integer.
 
-The function \verb|prop-type-set| shown in Listing~\ref{lst:prop-type-set} gets
-an \verb|Entity e| and returns its set of \verb|[propname, type]| tuples, i.e.,
-there's one such tuple for any owned attribute of \verb|e|.
+Two important functions for the transformation heuristics are discussed in the
+following.  The function \verb|prop-type-set| shown in
+Listing~\ref{lst:prop-type-set} gets an \verb|Entity e| and returns its set of
+\verb|[prop-name type]| tuples, i.e., there's one such tuple for any owned
+attribute of \verb|e|.
 
 \begin{listing}[h!tbp]
   \begin{clojurecode*}{firstnumber=27}
@@ -106,45 +108,28 @@ there's one such tuple for any owned attribute of \verb|e|.
   (set (map (fn [p] [(eget p :name) (eget p :type)])
             (eget e :ownedAttribute))))
   \end{clojurecode*}
-  \caption{A function retrieving the set of \textsf{[propname, type]} tuples of
-    an entity}
+  \caption{A function retrieving the set of \textsf{[prop-name type]} tuples
+    of an entity \textsf{e}}
     \label{lst:prop-type-set}
 \end{listing}
 
-The standard Clojure higher-order function \verb|map| gets a function and a
-collection, and it returns a sequence containing the results of applying that
-function to every element of the collection.  \verb|set| then coerces this
-sequence to a set.
-
-
 The \verb|filter-by-properties| function in
 Listing~\ref{lst:filter-by-properties} gets a collection of
-\verb|[propname, type]| tuples via its \verb|pnts| parameter, and a collection
+\verb|[prop-name type]| tuples via its \verb|pnts| parameter, and a collection
 of entities via its \verb|entities| parameter.  It returns the subset of
-\verb|entities|, where every entity defines all of the given properties with
+\verb|entities| for which every entity defines all of the given properties with
 identical types.
 
 \begin{listing}[htbp]
   \begin{clojurecode*}{firstnumber=30}
 (defn filter-by-properties [pnts entities]
-  (set (filter (fn [e]
-                 (forall? #(member? % (prop-type-set e)) pnts))
+  (set (filter (fn [e] (forall? #(member? % (prop-type-set e)) pnts))
                entities)))
   \end{clojurecode*}
   \caption{A function for filtering entities to those declaring a given set of
     properties}
   \label{lst:filter-by-properties}
 \end{listing}
-
-
-The syntax \verb|#(member? % (prop-type-set e))| is the shortest form of
-defining an anonymous function in Clojure.  The parameters are defined as
-\verb|%i| for \verb|i| being
-a number larger than 0, and \verb|%| is equivalent
-to \verb|%1|.  The largest \verb|i| defines the function's arity.  So here a
-local function of arity 1 is defined that checks if its single argument, a
-\verb|[propname, type]| tuple, is member of the \verb|prop-type-set| of entity
-\verb|e|.
 
 
 \paragraph{Restructuring Heuristics.}
@@ -155,15 +140,17 @@ they pull up the \emph{maximal set of properties that are shared by a maximum
 $P_1$ and $P_2$ be sets of properties shared by the sets of entities $E_1$ and
 $E_2$, respectively.
 
-\begin{enumerate}
+\begin{compactenum}
 \item If $|E_1| > |E_2|$, then the solution pulls up the properties of $P_1$
-  instead of the properties of $P_2$.  (\emph{Maximality wrt. the number of
-    entities declaring these properties})
+  instead of the properties of $P_2$.
+
+  (\emph{Maximality wrt. the number of entities declaring these properties})
 \item If $|E_1| = |E_2|$, then the solution pulls up the properties of $P_i$
   where~$i = \left\{\begin{array}{ll}1 & \text{if}~|P_1| \geq |P_2|\\2 &
-      \text{otherwise}\\ \end{array}\right.$.  (\emph{Maximality wrt. the
-    number of pullable properties.})
-\end{enumerate}
+      \text{otherwise}\\ \end{array}\right.$.
+
+  (\emph{Maximality wrt. the number of pullable properties.})
+\end{compactenum}
 
 Figure~\ref{fig:heuristics-example} illustrates these heuristics with two
 examples.  In the upper example, the property \verb|c| is shared by three
@@ -171,12 +158,11 @@ classes, whereas \verb|a| and \verb|b| are shared by only 2 classes each.  If
 the transformation pulls up \verb|a| first into a new class, \verb|c| can be
 pulled up only from \verb|C| and \verb|D| into another new class.  The number
 of property declaration decreases from 8 to 6, \verb|b| and \verb|c| remain
-duplicated once, and 2 new classes have been created.
-
-If the transformation uses the first heuristic, it pulls up \verb|c| first
-because that's common to more classes than \verb|a| and \verb|b|.  This also
-results in 6 remaining property declarations, \verb|a| and \verb|b| remain
-duplicated once, but only one new class has been created.
+duplicated once, and 2 new classes have been created.  If the transformation
+uses the first heuristic, it pulls up \verb|c| first because that's common to
+more classes than \verb|a| and \verb|b|.  This also results in 6 remaining
+property declarations, \verb|a| and \verb|b| remain duplicated once, but only
+one new class has been created.
 
 \begin{figure}[t]
   \centering
@@ -188,34 +174,30 @@ duplicated once, but only one new class has been created.
 In the lower example, the set of properties \verb|{a, b}| and \verb|{d}| are
 shared by two classes both.  If the transformation decides to pull up \verb|d|,
 the number of property declarations decreases from 7 to 6, \verb|a| and
-\verb|b| remain duplicated once, and one new class has been created.
-
-If the transformation uses the second heuristic, it pulls up \verb|a| and
-\verb|b|, and the number of property declarations decreases from 7 to 5, only
-\verb|d| remains duplicated once, and again one new class has been created.
+\verb|b| remain duplicated once, and one new class has been created.  If the
+transformation uses the second heuristic, it pulls up \verb|a| and \verb|b|,
+and the number of property declarations decreases from 7 to 5, only \verb|d|
+remains duplicated once, and again one new class has been created.
 
 The \verb|common-props| function for finding sets of pullable properties and
 sorting them according to the heuristics is shown in
 Listing~\ref{lst:common-props}.  It is by far the most complex function of the
 transformation.  The function receives a set of entities via its \verb|classes|
-parameter.  The properties common to a maximal subset of these entities are to
-be found.
+parameter and returns the properties common to a maximal subset of these
+entities.
 
-\begin{listing}[b!]
-  \begin{clojurecode*}{firstnumber=34}
+\begin{listing}[h!]
+  \begin{clojurecode}
 (defn common-props [classes]
-  (let [pes (set (map (fn [pnt]
-                        [pnt (filter-by-properties [pnt] classes)])
+  (let [pes (set (map (fn [pnt] [pnt (filter-by-properties [pnt] classes)])
                       (set (mapcat prop-type-set classes))))
         freq-map (apply hash-map
-                        (mapcat (fn [[_ ents]]
-                                  [ents (count (filter #(= ents (second %))
-                                                       pes))])
+                        (mapcat (fn [[_ ents]] [ents (count (filter #(= ents (second %))
+                                                                    pes))])
                                 pes))
         collapse (fn collapse [aes]
                    (when-let [[pnt entities] (first aes)]
-                     (let [[s r] (split-with (fn [[_ ents]]
-                                               (= entities ents)) aes)]
+                     (let [[s r] (split-with (fn [[_ ents]] (= entities ents)) aes)]
                        (cons [(map first s) entities]
                              (lazy-seq (collapse r))))))]
     (collapse (into (sorted-set-by
@@ -228,48 +210,34 @@ be found.
                                x))
                            x))))
                     pes))))
-  \end{clojurecode*}
+  \end{clojurecode}
   \caption{A function for retrieving the maximal set of properties shared by a
     maximum of classes}
   \label{lst:common-props}
 \end{listing}
 
-In line 35, the variable \verb|pes| is bound to a set of the following
-form\footnote{\textsf{\#\{...\} is a Clojure set literal.}}.
+In line 2, \verb|pes| is bound to a set of tuples \verb|[pnt entity-set]|,
+where \verb|pnt| is a \verb|[prop-name type]| tuple and \verb|entity-set| is
+the set of all entities declaring such a property.  That is, \verb|pes| has the
+following form\footnote{\textsf{\#\{...\} is a Clojure set literal.}}.
 
 \begin{clojurecode*}{linenos=none}
-#{[[pn1 t1] #{e1 e2 e3}]
-  [[pn4 t2] #{e2 e3 e4}]
-  [[pn2 t2] #{e2 e3 e4 e5}]
-  [[pn3 t2] #{e1 e2 e3}]}
+#{[[pn1 t1] #{e1 e2 e3}],    [[pn4 t2] #{e2 e3 e4}],
+  [[pn2 t2] #{e2 e3 e4 e5}], [[pn3 t2] #{e1 e2 e3}]}
 \end{clojurecode*}
 
-I.e., the set's items are tuples where the first component is a
-\verb|[propname, type]| tuple, and the second component is the set of entities
-declaring this property.  There is exactly one item for every unique pair of
-property name and type.
-
-In line 38, \verb|freq-map| is bound to a hash-map that maps to each set of
+In line 4, \verb|freq-map| is bound to a hash-map that maps to each set of
 entities occuring in the items of \verb|pes| the number of occurences in there.
-This map will be used to implement the second heuristic.
+This map is used to implement the second heuristic.
 
-In line 43, a local function \verb|collapse| is defined.  Before explaining
-that, first lines 49 to 58 are to be explained.  What's done there is that the
+In line 8, a local function \verb|collapse| is defined.  Before explaining
+that, first lines 13 to 22 are to be explained.  What's done there is that the
 entries of the set \verb|pes| are put into a sorted set.  The sorting order is
-determined by the comparator function defined in lines 50 to 57.  It's meaning
-is equivalent to comparator objects in Java.  It gets two objects and returns a
-negative number if the first object should be sorted before the second, it
-returns a positive number if the second object should be sorted before the
-first one, and it returns zero if both objects are equal.
+determined by the comparator function defined in lines 14 to 21.  It receives
+two items of the \verb|pes| set, binds their \verb|entity-set|s to \verb|aes|
+and \verb|bes|, respectively, and then performs these checks:
 
-Here, the comparator function receives two items of the \verb|pes| set.  It
-uses destructuring to bind the first one to \verb|a| and its entity set to
-\verb|aes|.  The first component of each item, the \verb|[propname, type]|
-tuple, is ignored.  Similarly, the second item is bound to \verb|b| and its set
-of entities is bound to \verb|bes|.  The comparator function then performs
-these checks:
-
-\begin{enumerate}
+\begin{compactenum}
 \item If \verb|bes| contains more entities than \verb|aes|, \verb|b| should be
   sorted before \verb|a|.  This implements heuristic 1.
 \item Else, if the entity set \verb|bes| occurs more often in the items of
@@ -278,38 +246,25 @@ these checks:
 \item Else the sorting order is not important and determined by Clojure's
   standard \verb|compare| function that produces a stable ordering upon all
   objects implementing \verb|Comparable|.
-\end{enumerate}
+\end{compactenum}
 
-As a result, the sorted set has the following structure.
+As a result, the sorted set has the following structure, i.e., items with
+larger entity sets are sorted before items with smaller entity sets.
 
 \begin{clojurecode*}{linenos=none}
-#{[[pn2 t2] #{e2 e3 e4 e5}]
-  [[pn1 t1] #{e1 e2 e3}]
-  [[pn3 t2] #{e1 e2 e3}]
-  [[pn4 t2] #{e2 e3 e4}]}
+#{[[pn2 t2] #{e2 e3 e4 e5}], [[pn1 t1] #{e1 e2 e3}],
+  [[pn3 t2] #{e1 e2 e3}],    [[pn4 t2] #{e2 e3 e4}]}
 \end{clojurecode*}
 
-Items with larger entity sets are sorted before items with smaller entity sets,
-e.g., the item with \verb|pn2| is sorted before the others because it is shared
-by 4 entities.  In case of equally large entity sets, the number of occurences
-of the entity sets determines the sorting order, e.g., the items with
-\verb|pn1| and \verb|pn2| are sorted before the item with \verb|pn4|, because
-their entity sets occur twice whereas the entity set of \verb|pn4| occurs only
-once.
+The item with \verb|pn2| is sorted before the others because it is shared by 4
+entities.  In case of equally large entity sets, the number of occurences of
+the entity sets determines the sorting order, e.g., the items with \verb|pn1|
+and \verb|pn2| are sorted before the item with \verb|pn4|, because their entity
+sets occur twice whereas the entity set of \verb|pn4| occurs only once.
 
-Finally, this set is mangled by the local \verb|collapse| function.  When the
-provided sorted set \verb|aes| contains a first entry (line 44), the set is
-split in two parts \verb|s| and \verb|r|, where \verb|s| contains all the items
-that have the very same entities set as the first item.  The result of the
-function is a list\footnote{In fact, the result is not a list but a lazy
-  sequence because the recursive call is wrapped with \textsf{lazy-seq}.  A
-  lazy seq is similar to a list, but the elements in its rest are not computed
-  (\emph{realized}) before someone tries to access them.  That is, the rest of
-  a lazy sequence is actually a closure that knows how to realize the sequence
-  one step further.}  where the head is a tuple \verb|[pnts entities]|, where
-\verb|pnts| is a list of \verb|[propname, type]| tuples, and the rest is the
-result of applying \verb|collapse| to the split-off part \verb|r|.  Using the
-example again, the result structure is as follows.
+Finally, this set is mangled by the local \verb|collapse| function defined in
+lines 8 to 12.  It simply collapses (merges) adjacent items with equal entity
+sets, thus the result of the function has the following form.
 
 \begin{clojurecode*}{linenos=none}
 ([([pn2 t2])          #{e2 e3 e4 e5}]
@@ -317,7 +272,8 @@ example again, the result structure is as follows.
  [([pn4 t2])          #{e2 e3 e4}]}
 \end{clojurecode*}
 
-That is, neighboring items with equal entity sets are collapsed into one.
+Because the items of \verb|pn1| and \verb|pn3| have the same set of declaring
+entities, they are merged into one item.
 
 
 \paragraph{Restructuring Rules.}
