@@ -222,8 +222,8 @@ the set of all entities declaring such a property.  That is, \verb|pes| has the
 following form\footnote{\textsf{\#\{...\} is a Clojure set literal.}}.
 
 \begin{clojurecode*}{linenos=none}
-#{[[pn1 t1] #{e1 e2 e3}],    [[pn4 t2] #{e2 e3 e4}],
-  [[pn2 t2] #{e2 e3 e4 e5}], [[pn3 t2] #{e1 e2 e3}]}
+#{[[pn1 t1] #{e1 e2 e3}]     [[pn4 t2] #{e2 e3 e4}]
+  [[pn2 t2] #{e2 e3 e4 e5}]  [[pn3 t2] #{e1 e2 e3}]}
 \end{clojurecode*}
 
 In line 4, \verb|freq-map| is bound to a hash-map that maps to each set of
@@ -252,8 +252,8 @@ As a result, the sorted set has the following structure, i.e., items with
 larger entity sets are sorted before items with smaller entity sets.
 
 \begin{clojurecode*}{linenos=none}
-#{[[pn2 t2] #{e2 e3 e4 e5}], [[pn1 t1] #{e1 e2 e3}],
-  [[pn3 t2] #{e1 e2 e3}],    [[pn4 t2] #{e2 e3 e4}]}
+#{[[pn2 t2] #{e2 e3 e4 e5}]  [[pn1 t1] #{e1 e2 e3}]
+  [[pn3 t2] #{e1 e2 e3}]     [[pn4 t2] #{e2 e3 e4}]}
 \end{clojurecode*}
 
 The item with \verb|pn2| is sorted before the others because it is shared by 4
@@ -272,35 +272,23 @@ sets, thus the result of the function has the following form.
  [([pn4 t2])          #{e2 e3 e4}]}
 \end{clojurecode*}
 
-Because the items of \verb|pn1| and \verb|pn3| have the same set of declaring
-entities, they are merged into one item.
+Because the items of \verb|pn1| and \verb|pn3| have the same entity set, they
+are merged into one item.
 
 
 \paragraph{Restructuring Rules.}
 
-In this section, the three restructuring rules are explained.  With the
-\verb|common-props| function in place, some observations can be made.  Rule 1
-and rule 2 are nearly identical.  When looking for shared properties in a set
-of subclasses, if there are properties shared by all of them, this is of course
-the maximal set, too.  The only difference is that for rule 1, no new entity
-has to be created, while for rule 2, where only a subset of subclasses shares
-properties, a new entity has to be created.
-
-Also rule 2 and rule 3 are very similar.  The difference is only if common
-properties are searched below subclasses of a given class, or below top-level
-classes.
-
-Therefore, the solution defines the function \verb|pull-up-helper| shown in
-Listing~\ref{lst:pull-up-helper} which can implement all rules by
-parameterizing it appropriately.  The function receives the root \verb|model|
-object \verb|mo|, a superclass \verb|super|, and a set of entities
+The solution defines the function \verb|pull-up-helper| shown in
+Listing~\ref{lst:pull-up-helper} which can implement all three restructuring
+rules by parameterizing it appropriately.  The function receives the root
+\verb|model| object \verb|mo|, a superclass \verb|super|, and a set of entities
 \verb|classes| in which to find common properties,.  In case of rule 1 and rule
 2, \verb|super| is the superclass of all \verb|classes|, and in case of rule 3,
 the \verb|super| parameter is \verb|nil| and \verb|classes| is the set of
 top-level classes.
 
 \begin{listing}[htbp]
-  \begin{clojurecode*}{firstnumber=59}
+  \begin{clojurecode}
 (defn pull-up-helper [mo super classes]
   (when (seq classes)
     (when-let [[pnts entities] (first (common-props classes))]
@@ -316,172 +304,54 @@ top-level classes.
               (make-generalization! mo s nc))
             (when super (make-generalization! mo nc super))
             true))))))
-  \end{clojurecode*}
+  \end{clojurecode}
   \caption{A restructuring function able to implement all three rules}
   \label{lst:pull-up-helper}
 \end{listing}
 
-When the set of classes is not empty\footnote{\textsf{(seq coll)} is the
-  canonical non-emptyness check in Clojure.} (line 60), and if there are common
-properties, the largest list of common properties among the lists of properties
-declared by a maximal number of entities is bound to \verb|pnts|, and the
-entities declaring these properties are bound to \verb|entities| (line 61).
+When the set of classes is not empty (line 2), and if there are common
+properties (line 3), the largest list of common properties among the lists of
+properties declared by a maximal number of entities is bound to \verb|pnts|,
+and the entities declaring these properties are bound to \verb|entities|.
 
-In case \verb|entities| equals the set of all \verb|classes| (line 62), the
+In case \verb|entities| equals the set of all \verb|classes| (line 4), the
 situation is that of rule 1, and all properties in \verb|pnts| are pulled up to
-\verb|super| (line 63).
+\verb|super| (line 5).
 
 In the other case, the maximal set of common properties is shared by a maximal
-but real subset of \verb|classes|.  In that case, it has to be ensured that
-there are more than one entity declaring these properties (line 64), because
-else the inheritance depth would increase without removing declarations.
+but strict subset of \verb|classes|.  Here, it has to be ensured that there are
+more than one entity declaring these properties (line 6), because else the
+inheritance depth would increase without removing declarations.  Then, the
+situation is that of rule 2 if \verb|super| is non-nil, and the situation is
+that of rule 3 if \verb|super| is nil.  In any case, all shared properties are
+pulled into a new entity \verb|nc|, and the generalizations are adapted.
 
-Then, the situation is that of rule 2 if \verb|super| is non-nil, or the
-situation is that of rule 3 if \verb|super| is nil.  In any case, a new entity
-\verb|nc| has to be created (line 65), and all properties \verb|pnts| have to
-be pulled from \verb|entities| to \verb|nc| (line 66).  The original
-generalizations to \verb|super| are deleted (lines 67 to 70), and new
-generalizations from the entities to \verb|nc| are created (line 71).
-
-If \verb|super| is non-nil, also a new generalization from \verb|nc| to the
-original superclass \verb|super| is created (line 72).  Finally, \verb|true| is
-returned to indicate to the caller that a restructuring has performed.
-
-Using this helper, the individual rules are very easy.
-Listing~\ref{lst:pull-up-1-2} shows the function implementing rule 1 and 2.  It
-uses \verb|loop|/\verb|recur|, a local tail-recursion, to call the
-\verb|pull-up-helper| once for any class and its subclasses.  The
-\verb|applied| variable determines the return value of the function.  It is
-\verb|true| if the helper could perform a restructuring at least once.
+The overall transformation function simply calls the \verb|pull-up-helper|
+function shown above with appropriate parametrization as long as it can find a
+match.
 
 
-\begin{listing}[htbp]
-  \begin{clojurecode*}{firstnumber=74}
-(defn pull-up-1-2 [mo]
-  (loop [classes (eget mo :entitys), applied false]
-    (if (seq classes)
-      (let [super (first classes)
-            result (pull-up-helper
-                    mo super (set (adjs super :specialization :specific)))]
-        (recur (rest classes) (or result applied)))
-      applied)))
-  \end{clojurecode*}
-  \caption{A function applying rule 1 and 2 to all classes}
-    \label{lst:pull-up-1-2}
-\end{listing}
+\paragraph{Multiple Inheritance Extension.}
 
-Listing~\ref{lst:pull-up-3} depicts the function \verb|pull-up-3| implementing
-rule 3.
-
-\begin{listing}[htbp]
-  \begin{clojurecode*}{firstnumber=82}
-(defn pull-up-3 [mo]
-  (pull-up-helper mo nil (set (remove #(seq (eget % :generalization))
-                                      (eget mo :entitys)))))
-  \end{clojurecode*}
-  \caption{A function applying rule 3 to all top-level classes}
-    \label{lst:pull-up-3}
-\end{listing}
-
-It simply calls the helper providing \verb|nil| as superclass parameter, and
-the set of top-level classes.
-
-
-\paragraph{The Transformation Function.}
-
-The function \verb|pull-up-attributes| shown in
-Listing~\ref{lst:pull-up-attributes} implements the overall transformation by
-calling the rules defined in the previous section.  It receives the class
-diagram EMF model via its \verb|model| parameter, and the
-\verb|multi-inheritance| parameter specifies if multiple inheritance should be
-exploited in order to minimize the number of property declarations.  This
-extension task is discussed in Section~\ref{sec:extension-task}.
-
-\begin{listing}[htbp]
-  \begin{clojurecode*}{firstnumber=85}
-(defn pull-up-attributes [model multi-inheritance]
-  (let [mo (the (eallobjects model 'model))]
-    (iteratively #(let [r (pull-up-1-2 mo)]
-                    (or (pull-up-3 mo) r)))
-    (when multi-inheritance (exploit-multiple-inheritance mo))
-    model))
-  \end{clojurecode*}
-  \caption{The transformation function}
-    \label{lst:pull-up-attributes}
-\end{listing}
-
-In line 86, the single root \verb|model| object is retrieved and bound to the
-variable \verb|mo|.  The function \verb|iteratively| in line 87 takes a
-function and applies it as long as it returns \verb|true|.  The anonymous
-function given to it first applies the \verb|pull-up-1-2| rule, then the
-\verb|pull-up-3| rule.  It returns \verb|true| if at least one of the rules
-could be applied.
-
-In case \verb|multi-inheritance| is \verb|true|, another rule which is
-explained in Section~\ref{sec:extension-task} is applied.  Finally, the
-\verb|model| is returned.
-
-
-
-\section{The Multiple Inheritance Extension Task}
-\label{sec:extension-task}
-
-The rules discussed in Section~\ref{sec:core-task} work well also if the
-initial model already contains multiple inheritance.  However, they won't
-create new classes that specialize more than one single superclass.
+The solution discussed so far works well also if the initial model already
+contains multiple inheritance.  However, they won't create new classes that
+specialize more than one single superclass.
 
 To exploit the presence of multiple inheritance in order to restructure the
 model resulting from the core rules so that every property is declared exactly
-once, the additional rule shown in
-Listing~\ref{lst:exploit-multiple-inheritance} is used.  It receives the root
-\verb|model| object as its only parameter.
-
-\begin{listing}[htbp]
-  \begin{clojurecode*}{firstnumber=90}
-(defn exploit-multiple-inheritance [mo]
-  (doseq [[pnts entities] (common-props (eget mo :entitys))
-          :while (> (count entities) 1)]
-    (let [[nc reuse]
-          (if-let [top (first (filter
-                               #(and (empty? (eget % :generalization))
-                                     (re-matches #"NewClass.*" (eget % :name)))
-                               entities))]
-            [top true]
-            [(make-entity! mo) false])]
-      (doseq [[pn t] pnts]
-        (when-not reuse
-          (add-prop! mo nc pn t))
-        (doseq [e (remove #(= nc %) entities)]
-          (delete-prop! e pn)
-          (make-generalization! mo e nc))))))
-  \end{clojurecode*}
-  \caption{A function for exploiting multiple inheritance}
-    \label{lst:exploit-multiple-inheritance}
-\end{listing}
-
-\begin{sloppypar}
-  The function iterates over the result list of common properties of all
-  entities in the model that are shared by at least 2 entities.  In every
-  iteration, \verb|pnts| is bound to a list of \verb|[propname type]| tuples,
-  and \verb|entities| is the set of entities declaring these properties.
-\end{sloppypar}
-
-Naively, one could create a new entity in every iteration, pull the common
-properties into it, and make all \verb|entities| subclasses of the new one.
-But this might create more new entities than necessary.  Instead, it is
-preferrable to reuse some existing top-level class that already declares these
-properties.  In that case, only new generalizations have to be created from all
-\verb|entities| (except this one) to this top-level class, and the shared
-properties have to be deleted from the subclasses.
-
-The function takes into account one further issue.  When looking for such a
-top-level class, only the classes created by the rules of the core task are
-considered.  The reason is that reusing an entity that already existed in the
-original class model will make the transformation result's type hierarchy
-incompatible with that of the original model, that is, in the original model
-\verb|B| was no subclass of \verb|A|, but in the result model it is.  Such a
-change is likely to break programs implemented using these classes since its
-polymorphic method calls and instance tests might deliver unexpected results.
+once, the additional rule is used.  It computes the set of duplicated
+properties of all classes, and then acts according these heuristics.
+\begin{compactenum}
+\item If one of the entities declaring the duplicated property is a top-level
+  class created by the core task rules, then the other entities become
+  subclasses of this entity.  The reason for only reusing top-level entities
+  created by the core task is that reusing an entity that already existed in
+  the original class model will make the transformation result's type hierarchy
+  incompatible with that of the original model, that is, in the original model
+  B was no subclass of A, but in the result model it is.
+\item Else, a new entity is created as superclass of the entities, and the
+  property is pulled up.
+\end{compactenum}
 
 
 \section{Evaluation}
@@ -490,34 +360,16 @@ polymorphic method calls and instance tests might deliver unexpected results.
 The evaluation results requested by the case description
 \cite{cdrestructcasedesc} are summarized in Table~\ref{tab:evaluation}.
 
-With respect to \emph{size}, the FunnyQT solution to the core task consists of
-exactly 90 lines of code excluding comments, empty lines, and namespace
-declarations.  The extension rule for exploiting multiple inheritance accounts
-for another 15 LOCs.  This seems quite good, although the UML-RSDS reference
-solution is only about 30 LOCs due to its very declarative nature.
-
-The case description defines the \emph{complexitiy} as the sum of operator
-occurences, type references, and feature references.  The FunnyQT solution
-consists of 161 function calls (or calls to special forms or macros), 4 type
-references, and 25 feature references.
-
-For all provided test models, the \emph{effectiveness} of the core task
-solution is 100\%.  The unit tests also apply the core transformation to
-several additional models (such as the ones depicted in
-Figure~\ref{fig:heuristics-example}) in which the implemented heuristics are of
-importance.  For these models, the effectiveness is 100\%, too.  When the
-transformation including the multiple inheritance rule is applied to the
-models, the result is that every duplication is removed, i.e., every property
-is declared exactly once.
-
-The \emph{development effort} is quite hard to estimate retrospectively,
-because it has been an on-off task.  The initial working version for the core
-task has been implemented from scratch in about two hours.  After thinking
-about it in my spare time and restructuring some more sample models using pen
-and paper, it has been refactored and enhanced to the solution presented in
-this paper.  All in all, a development effort of approximately 8 hours seems
-realistic.  About two additional hours have been invested for defining the unit
-tests.
+With 110 lines of code (core + extension task), the FunnyQT solution is
+reasonably \emph{concise} given that its heuristics are more advanced than the
+case description required.  Due to these heuristics, its \emph{effectiveness}
+is 100\% for all provided and several additional models (such as the ones
+depicted in Figure~\ref{fig:heuristics-example}).  The case description defines
+the \emph{complexitiy} as the sum of operator occurences, type references, and
+feature references.  The FunnyQT solution consists of 161 function calls (or
+calls to special forms or macros), 4 type references, and 25 feature
+references.  The \emph{development effort} has been about 8 hours for the
+solution plus 2 hours for writing unit tests for it.
 
 \begin{table}[htb]
   \centering
@@ -560,11 +412,11 @@ inheritance rule has only little influence on the execution times.
     \textsf{testcase2\_10000}  & 5656 ms   & 6041 ms\\
     \textsf{testcase3}         & 248 ms    & 268 ms\\
     \hline
+    \textbf{Additional model}  & & \\
+    \hline
     \textsf{mitest1}           & 1 ms      & 1 ms\\
     \textsf{mitest2}           & 1 ms      & 1 ms\\
     \textsf{mitest3}           & 1 ms      & 1 ms\\
-    \hline
-    \textbf{Additional model}  & & \\
     \hline
     \textsf{testcase2\_50000}  & 75238 ms  & 76835 ms\\
     \textsf{testcase2\_100000} & 262917 ms & 264483 ms\\
@@ -576,15 +428,10 @@ inheritance rule has only little influence on the execution times.
 \end{table}
 
 \begin{sloppypar}
-  To determine the \emph{maximum capability} of the solution, the models
-  \verb|testcase2_50000|, \verb|testcase2_100000|, and \verb|testcase2_200000|
-  consisting of half a million, one million, and two million elements,
-  respectively, have been generated.  Transforming \verb|testcase2_50000| runs
-  slightly more than one minute, \verb|testcase2_100000| runs in about five
-  minutes, and \verb|testcase2_200000| runs in about 17 minutes.  Given the
-  limited amount of 800 MB memory available to the JVM process on SHARE, the
-  model with 2 million elements is approximately the maximum capability for the
-  FunnyQT solution.
+  To determine the \emph{maximum capability} of the solution, models up to two
+  millions of elements have been created.  Given the limited amount of 800 MB
+  memory available to the JVM process on SHARE, the model with 2 million
+  elements is approximately the maximum capability for the FunnyQT solution.
 \end{sloppypar}
 
 \FloatBarrier
