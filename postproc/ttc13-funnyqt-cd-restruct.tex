@@ -97,39 +97,27 @@ new \verb|Generalization| between a sub- and its super-entity, and there's
 ``NewClass'' concatenated with some unambiguous integer.
 
 Two important functions for the transformation heuristics are discussed in the
-following.  The function \verb|prop-type-set| shown in
-Listing~\ref{lst:prop-type-set} gets an \verb|Entity e| and returns its set of
-\verb|[prop-name type]| tuples, i.e., there's one such tuple for any owned
-attribute of \verb|e|.
+following.  The function \verb|prop-type-set| gets an \verb|Entity e| and
+returns its set of \verb|[prop-name type]| tuples, i.e., there's one such tuple
+for any owned attribute of \verb|e|.
 
-\begin{listing}[h!tbp]
-  \begin{clojurecode*}{firstnumber=27}
+\begin{clojurecode}
 (defn prop-type-set [e]
   (set (map (fn [p] [(eget p :name) (eget p :type)])
             (eget e :ownedAttribute))))
-  \end{clojurecode*}
-  \caption{A function retrieving the set of \textsf{[prop-name type]} tuples
-    of an entity \textsf{e}}
-    \label{lst:prop-type-set}
-\end{listing}
+\end{clojurecode}
 
-The \verb|filter-by-properties| function in
-Listing~\ref{lst:filter-by-properties} gets a collection of
+The \verb|filter-by-properties| function gets a collection of
 \verb|[prop-name type]| tuples via its \verb|pnts| parameter, and a collection
 of entities via its \verb|entities| parameter.  It returns the subset of
 \verb|entities| for which every entity defines all of the given properties with
 identical types.
 
-\begin{listing}[htbp]
-  \begin{clojurecode*}{firstnumber=30}
+\begin{clojurecode}
 (defn filter-by-properties [pnts entities]
   (set (filter (fn [e] (forall? #(member? % (prop-type-set e)) pnts))
                entities)))
-  \end{clojurecode*}
-  \caption{A function for filtering entities to those declaring a given set of
-    properties}
-  \label{lst:filter-by-properties}
-\end{listing}
+\end{clojurecode}
 
 
 \paragraph{Restructuring Heuristics.}
@@ -152,6 +140,13 @@ $E_2$, respectively.
   (\emph{Maximality wrt. the number of pullable properties.})
 \end{compactenum}
 
+\begin{figure}[h!tb]
+  \centering
+  \includegraphics[width=\linewidth]{heuristics-example}
+  \caption{Examples for the heuristics}
+  \label{fig:heuristics-example}
+\end{figure}
+
 Figure~\ref{fig:heuristics-example} illustrates these heuristics with two
 examples.  In the upper example, the property \verb|c| is shared by three
 classes, whereas \verb|a| and \verb|b| are shared by only 2 classes each.  If
@@ -164,13 +159,6 @@ more classes than \verb|a| and \verb|b|.  This also results in 6 remaining
 property declarations, \verb|a| and \verb|b| remain duplicated once, but only
 one new class has been created.
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.6\linewidth]{heuristics-example}
-  \caption{Examples for the heuristics}
-  \label{fig:heuristics-example}
-\end{figure}
-
 In the lower example, the set of properties \verb|{a, b}| and \verb|{d}| are
 shared by two classes both.  If the transformation decides to pull up \verb|d|,
 the number of property declarations decreases from 7 to 6, \verb|a| and
@@ -179,15 +167,13 @@ transformation uses the second heuristic, it pulls up \verb|a| and \verb|b|,
 and the number of property declarations decreases from 7 to 5, only \verb|d|
 remains duplicated once, and again one new class has been created.
 
-The \verb|common-props| function for finding sets of pullable properties and
-sorting them according to the heuristics is shown in
-Listing~\ref{lst:common-props}.  It is by far the most complex function of the
-transformation.  The function receives a set of entities via its \verb|classes|
-parameter and returns the properties common to a maximal subset of these
-entities.
+The \verb|common-props| function finds sets of pullable properties and sorts
+them according to the heuristics.  It is by far the most complex function of
+the transformation.  The function receives a set of entities via its
+\verb|classes| parameter and returns the properties common to a maximal subset
+of these entities.
 
-\begin{listing}[h!]
-  \begin{clojurecode}
+\begin{clojurecode}
 (defn common-props [classes]
   (let [pes (set (map (fn [pnt] [pnt (filter-by-properties [pnt] classes)])
                       (set (mapcat prop-type-set classes))))
@@ -205,16 +191,10 @@ entities.
                        (let [x (- (count bes) (count aes))]
                          (if (zero? x)
                            (let [x (- (freq-map bes) (freq-map aes))]
-                             (if (zero? x)
-                               (compare a b)
-                               x))
+                             (if (zero? x) (compare a b) x))
                            x))))
                     pes))))
-  \end{clojurecode}
-  \caption{A function for retrieving the maximal set of properties shared by a
-    maximum of classes}
-  \label{lst:common-props}
-\end{listing}
+\end{clojurecode}
 
 In line 2, \verb|pes| is bound to a set of tuples \verb|[pnt entity-set]|,
 where \verb|pnt| is a \verb|[prop-name type]| tuple and \verb|entity-set| is
@@ -243,7 +223,7 @@ and \verb|bes|, respectively, and then performs these checks:
 \item Else, if the entity set \verb|bes| occurs more often in the items of
   \verb|pes|, \verb|b| should be sorted before \verb|a|.  This implements
   heuristic 2.
-\item Else the sorting order is not important and determined by Clojure's
+\item Else, the sorting order is not important and determined by Clojure's
   standard \verb|compare| function that produces a stable ordering upon all
   objects implementing \verb|Comparable|.
 \end{compactenum}
@@ -372,6 +352,7 @@ references.  The \emph{development effort} has been about 8 hours for the
 solution plus 2 hours for writing unit tests for it.
 
 \begin{table}[htb]
+  \footnotesize
   \centering
   \begin{tabular}{| l | l |}
     \hline
@@ -400,10 +381,11 @@ the reference UML-RSDS solution.  It can be seen that the additional multiple
 inheritance rule has only little influence on the execution times.
 
 \begin{table}[htb]
+  \footnotesize
   \centering
   \begin{tabular}{| l | r | r |}
     \hline
-    \textbf{Provided model}    & \textbf{Core task only} & \textbf{Core and Extension task}\\
+    \textbf{Model}    & \textbf{Core task only} & \textbf{Core and Extension task}\\
     \hline
     \textsf{testcase1}         & 1 ms      & 1 ms\\
     \textsf{testcase2}         & 1 ms      & 1 ms\\
@@ -412,14 +394,7 @@ inheritance rule has only little influence on the execution times.
     \textsf{testcase2\_10000}  & 5656 ms   & 6041 ms\\
     \textsf{testcase3}         & 248 ms    & 268 ms\\
     \hline
-    \textbf{Additional model}  & & \\
-    \hline
-    \textsf{mitest1}           & 1 ms      & 1 ms\\
-    \textsf{mitest2}           & 1 ms      & 1 ms\\
-    \textsf{mitest3}           & 1 ms      & 1 ms\\
-    \hline
-    \textsf{testcase2\_50000}  & 75238 ms  & 76835 ms\\
-    \textsf{testcase2\_100000} & 262917 ms & 264483 ms\\
+    \textsf{...}               & ...        & ...\\
     \textsf{testcase2\_200000} & 1006848 ms & 1045648 ms\\
     \hline
   \end{tabular}
