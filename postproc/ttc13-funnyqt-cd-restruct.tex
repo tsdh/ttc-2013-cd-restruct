@@ -10,7 +10,6 @@
 \usepackage{verbatim}
 \usepackage{amsmath}
 \usepackage{graphicx}
-\usepackage{footmisc}
 \usepackage{placeins}
 
 
@@ -28,19 +27,17 @@
   \institute{Institute for Software Technology, University Koblenz-Landau, Germany}}
 
 
-\clubpenalty = 10000
-\widowpenalty = 10000
-\displaywidowpenalty = 10000
+% \clubpenalty = 10000
+% \widowpenalty = 10000
+% \displaywidowpenalty = 10000
 
 %% Reduce the space between image and captions
-\setlength\abovecaptionskip{0cm}
+\setlength\abovecaptionskip{0.1cm}
 \setlength\belowcaptionskip{0cm}
 
 
 \begin{document}
-
 \maketitle
-
 \begin{abstract}
   FunnyQT is a model querying and model transformation library for the
   functional Lisp-dialect Clojure providing a rich and efficient querying and
@@ -73,13 +70,14 @@ task is tackled algorithmically.
 \section{The Core Task}
 \label{sec:core-task}
 
-The core task's solution consists of several helper functions, a function for
+The core task's solution consists of some helper functions, a function for
 finding sets of pullable properties and sorting them heuristically in order to
-achieve effective results, the restructuring rules depicted in the case
-description \cite{cdrestructcasedesc}, and a function applying the rules in
-order to realized the transformation.  This solution description starts with
-the helpers, then dives into the details of the function finding pullable
-properties, and then explains the restructuring rules.
+achieve effective results, the rules depicted in the case description
+\cite{cdrestructcasedesc}, and a function applying the rules in order to
+realize the transformation.  This section starts with the helpers, then
+explains the function finding pullable properties, and then discusses the
+restructuring rules.  The complete source code is printed in
+Appendix~\ref{sec:complete-source-code}.
 
 \paragraph{Helper Functions.}
 
@@ -98,19 +96,16 @@ new \verb|Generalization| between a sub- and its super-entity, and there's
 The function \verb|prop-type-set| gets an \verb|Entity e| and returns its set
 of \verb|[prop-name type]| tuples, i.e., there's one such tuple for any owned
 attribute of \verb|e|.
-
 \begin{clojurecode}
 (defn prop-type-set [e]
   (set (map (fn [p] [(eget p :name) (eget p :type)])
             (eget e :ownedAttribute))))
 \end{clojurecode}
-
 The \verb|filter-by-properties| function gets a collection of
 \verb|[prop-name type]| tuples via its \verb|pnts| parameter, and a collection
 of entities via its \verb|entities| parameter.  It returns the subset of
 \verb|entities| for which every entity defines all of the given properties with
 identical types.
-
 \begin{clojurecode}
 (defn filter-by-properties [pnts entities]
   (set (filter (fn [e] (forall? #(member? % (prop-type-set e)) pnts))
@@ -145,7 +140,7 @@ of properties shared by the sets of entities $E_1$ and $E_2$, respectively.
 \end{figure}
 
 Figure~\ref{fig:heuristics-example} illustrates these heuristics with two
-examples.  In the upper example, the property \verb|c| is shared by three
+examples.  In the left example, the property \verb|c| is shared by three
 classes, whereas \verb|a| and \verb|b| are shared by only 2 classes each.  If
 the transformation pulls up \verb|a| first into a new class, \verb|c| can be
 pulled up only from \verb|C| and \verb|D| into another new class.  The number
@@ -156,7 +151,7 @@ more classes than \verb|a| and \verb|b|.  This also results in 6 remaining
 property declarations, \verb|a| and \verb|b| remain duplicated once, but only
 one new class has been created.
 
-In the lower example, the set of properties \verb|{a, b}| and \verb|{d}| are
+In the right example, the set of properties \verb|{a, b}| and \verb|{d}| are
 shared by two classes both.  If the transformation decides to pull up \verb|d|,
 the number of property declarations decreases from 7 to 6, \verb|a| and
 \verb|b| remain duplicated once, and one new class has been created.  If the
@@ -169,7 +164,6 @@ them according to the heuristics.  It is by far the most complex function of
 the transformation.  The function receives a set of entities via its
 \verb|classes| parameter and returns the properties common to a maximal subset
 of these entities.
-
 \begin{clojurecode}
 (defn common-props [classes]
   (let [pes (set (map (fn [pnt] [pnt (filter-by-properties [pnt] classes)])
@@ -192,17 +186,14 @@ of these entities.
                            x))))
                     pes))))
 \end{clojurecode}
-
 In line 2, \verb|pes| is bound to a set of tuples \verb|[pnt entity-set]|,
 where \verb|pnt| is a \verb|[prop-name type]| tuple and \verb|entity-set| is
 the set of all entities declaring such a property.  That is, \verb|pes| has the
 following form\footnote{\textsf{\#\{...\} is a Clojure set literal.}}.
-
 \begin{clojurecode*}{linenos=none}
 #{[[pn1 t1] #{e1 e2 e3}]     [[pn4 t2] #{e2 e3 e4}]
   [[pn2 t2] #{e2 e3 e4 e5}]  [[pn3 t2] #{e1 e2 e3}]}
 \end{clojurecode*}
-
 In line 4, \verb|freq-map| is bound to a hash-map that maps to each set of
 entities occuring in the items of \verb|pes| the number of occurences in there.
 This map is used to implement the second heuristic.
@@ -213,7 +204,6 @@ entries of the set \verb|pes| are put into a sorted set.  The sorting order is
 determined by the comparator function defined in lines 14 to 21.  It receives
 two items of the \verb|pes| set, binds their \verb|entity-set|s to \verb|aes|
 and \verb|bes|, respectively, and then performs these checks:
-
 \begin{compactenum}
 \item If \verb|bes| contains more entities than \verb|aes|, \verb|b| should be
   sorted before \verb|a|.  This implements heuristic 1.
@@ -224,17 +214,14 @@ and \verb|bes|, respectively, and then performs these checks:
   standard \verb|compare| function that produces a stable ordering upon all
   objects implementing \verb|Comparable|.
 \end{compactenum}
-
 As a result, the sorted set has the following structure, i.e., items with
-larger entity sets are sorted before items with smaller entity sets.
-
+larger entity sets are sorted before items with smaller entity sets.  The item
+with \verb|pn2| is sorted before the others because it is shared by 4 entities.
 \begin{clojurecode*}{linenos=none}
 #{[[pn2 t2] #{e2 e3 e4 e5}]  [[pn1 t1] #{e1 e2 e3}]
   [[pn3 t2] #{e1 e2 e3}]     [[pn4 t2] #{e2 e3 e4}]}
 \end{clojurecode*}
-
-The item with \verb|pn2| is sorted before the others because it is shared by 4
-entities.  In case of equally large entity sets, the number of occurences of
+In case of equally large entity sets, the number of occurences of
 the entity sets determines the sorting order, e.g., the items with \verb|pn1|
 and \verb|pn2| are sorted before the item with \verb|pn4|, because their entity
 sets occur twice whereas the entity set of \verb|pn4| occurs only once.
@@ -242,13 +229,9 @@ sets occur twice whereas the entity set of \verb|pn4| occurs only once.
 Finally, this set is mangled by the local \verb|collapse| function defined in
 lines 8 to 12.  It simply collapses (merges) adjacent items with equal entity
 sets, thus the result of the function has the following form.
-
 \begin{clojurecode*}{linenos=none}
-([([pn2 t2])          #{e2 e3 e4 e5}]
- [([pn1 t1] [pn3 t2]) #{e1 e2 e3}]
- [([pn4 t2])          #{e2 e3 e4}]}
+([([pn2 t2]) #{e2 e3 e4 e5}],    [([pn1 t1] [pn3 t2]) #{e1 e2 e3}],    [([pn4 t2]) #{e2 e3 e4}]}
 \end{clojurecode*}
-
 Because the items of \verb|pn1| and \verb|pn3| have the same entity set, they
 are merged into one item.
 
@@ -289,19 +272,17 @@ top-level classes.
 When the set of classes is not empty (line 2), and if there are common
 properties (line 3), the largest list of common properties among the lists of
 properties declared by a maximal number of entities is bound to \verb|pnts|,
-and the entities declaring these properties are bound to \verb|entities|.
-
-In case \verb|entities| equals the set of all \verb|classes| (line 4), the
+and the entities declaring these properties are bound to \verb|entities|.  In
+case \verb|entities| equals the set of all \verb|classes| (line 4), the
 situation is that of rule 1, and all properties in \verb|pnts| are pulled up to
-\verb|super| (line 5).
-
-In the other case, the maximal set of common properties is shared by a maximal
-but strict subset of \verb|classes|.  Here, it has to be ensured that there are
-more than one entity declaring these properties (line 6), because else the
-inheritance depth would increase without removing declarations.  Then, the
-situation is that of rule 2 if \verb|super| is non-nil, and the situation is
-that of rule 3 if \verb|super| is nil.  In any case, all shared properties are
-pulled into a new entity \verb|nc|, and the generalizations are adapted.
+\verb|super| (line 5).  In the other case, the maximal set of common properties
+is shared by a maximal but strict subset of \verb|classes|.  Here, it has to be
+ensured that there are more than one entity declaring these properties (line
+6), because else the inheritance depth would increase without removing
+declarations.  Then, the situation is that of rule 2 if \verb|super| is
+non-nil, and the situation is that of rule 3 if \verb|super| is nil.  In any
+case, all shared properties are pulled into a new entity \verb|nc|, and the
+generalizations are adapted.
 
 The overall transformation function simply calls the \verb|pull-up-helper|
 function shown above with appropriate parametrization as long as it can find a
@@ -369,8 +350,7 @@ in Table\ref{tab:exec-times}.  The largest provided model
 \verb|testcase2_10000| consisting of 100000 elements\footnote{The models
   \textsf{testcase2\_n} actually consist of $10\times n$ elements.} can be
 processed in about six seconds which is more than a thousand times faster than
-the reference UML-RSDS solution.  The multiple inheritance extension rule has
-only little influence on the execution times.
+the reference UML-RSDS solution.
 
 \begin{table}[htb]
   \footnotesize
@@ -393,7 +373,7 @@ only little influence on the execution times.
 
 \begin{sloppypar}
   To determine the \emph{maximum capability} of the solution, models up to two
-  millions of elements have been created.  Givew the limited amount of 800 MB
+  millions of elements have been created.  Given the limited amount of 800 MB
   RAM available to the JVM process on SHARE, the model with 2 million elements
   (\verb|testcase2_200000|) is about the maximum capability for the solution.
 \end{sloppypar}
