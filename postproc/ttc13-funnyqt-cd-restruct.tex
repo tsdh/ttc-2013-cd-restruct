@@ -66,7 +66,8 @@ For solving the tasks of this transformation case\footnote{This FunnyQT
   solution is available at \url{https://github.com/tsdh/ttc-2013-cd-restruct}
   and on SHARE (image
   \textsf{TTC13::Ubuntu12LTS\_TTC13::FunnyQT.vdi})\label{fn:github}}, only
-FunnyQT's plain querying and model manipulation APIs have been used.
+FunnyQT's plain querying and model manipulation APIs have been used, and the
+task is tackled algorithmically.
 
 
 \section{The Core Task}
@@ -74,12 +75,11 @@ FunnyQT's plain querying and model manipulation APIs have been used.
 
 The core task's solution consists of several helper functions, a function for
 finding sets of pullable properties and sorting them heuristically in order to
-achieve effective results, the three restructuring rules depicted in the case
-description \cite{cdrestructcasedesc}, and a last function composing the rules
-in order to realized the transformation.  This solution description starts with
+achieve effective results, the restructuring rules depicted in the case
+description \cite{cdrestructcasedesc}, and a function applying the rules in
+order to realized the transformation.  This solution description starts with
 the helpers, then dives into the details of the function finding pullable
-properties, then explains the restructuring rules, and finally describes the
-transformation function.
+properties, and then explains the restructuring rules.
 
 \paragraph{Helper Functions.}
 
@@ -93,13 +93,11 @@ name from a given entity.  The \verb|pull-up| function gets a list of
 It then adds new properties to the target entity and deletes them from the
 source entities.  Lastly, there's \verb|make-generalization!| which creates a
 new \verb|Generalization| between a sub- and its super-entity, and there's
-\verb|make-entity!| that creates a new \verb|Entity| and sets its name to
-``NewClass'' concatenated with some unambiguous integer.
+\verb|make-entity!| that creates a new \verb|Entity|.
 
-Two important functions for the transformation heuristics are discussed in the
-following.  The function \verb|prop-type-set| gets an \verb|Entity e| and
-returns its set of \verb|[prop-name type]| tuples, i.e., there's one such tuple
-for any owned attribute of \verb|e|.
+The function \verb|prop-type-set| gets an \verb|Entity e| and returns its set
+of \verb|[prop-name type]| tuples, i.e., there's one such tuple for any owned
+attribute of \verb|e|.
 
 \begin{clojurecode}
 (defn prop-type-set [e]
@@ -122,11 +120,10 @@ identical types.
 
 \paragraph{Restructuring Heuristics.}
 
-The rules of this solution don't pull up one attribute at a time, but instead
-they pull up the \emph{maximal set of properties that are shared by a maximum
-  of entities}.  That is, the heuristics used can be specified as follows.  Let
-$P_1$ and $P_2$ be sets of properties shared by the sets of entities $E_1$ and
-$E_2$, respectively.
+This solution doesn't pull up one attribute at a time, but instead it pulls up
+the \emph{maximal set of properties that are shared by a maximum of entities}.
+I.e., the heuristics can be specified as follows.  Let $P_1$ and $P_2$ be sets
+of properties shared by the sets of entities $E_1$ and $E_2$, respectively.
 
 \begin{compactenum}
 \item If $|E_1| > |E_2|$, then the solution pulls up the properties of $P_1$
@@ -314,21 +311,18 @@ match.
 \paragraph{Multiple Inheritance Extension.}
 
 The solution discussed so far works well also if the initial model already
-contains multiple inheritance.  However, they won't create new classes that
-specialize more than one single superclass.
-
-To exploit the presence of multiple inheritance in order to restructure the
-model resulting from the core rules so that every property is declared exactly
-once, the additional rule is used.  It computes the set of duplicated
-properties of all classes, and then acts according these heuristics.
+contains multiple inheritance.  However, they won't create new entities that
+specialize more than one other entity.  To exploit multiple inheritance in
+order to restructure the model resulting from the core rules so that there are
+no duplicate properties, one additional rule is used.  It computes the set of
+duplicated properties of all classes, and then acts according these heuristics.
 \begin{compactenum}
 \item If one of the entities declaring the duplicated property is a top-level
-  class created by the core task rules, then the other entities become
-  subclasses of this entity.  The reason for only reusing top-level entities
-  created by the core task is that reusing an entity that already existed in
-  the original class model will make the transformation result's type hierarchy
-  incompatible with that of the original model, that is, in the original model
-  B was no subclass of A, but in the result model it is.
+  class created by the core task, then the other entities become its
+  subclasses.  Only top-level entities created by the core task are reused,
+  because reusing one that already existed in the original class model makes
+  the result's type hierarchy incompatible with original one, i.e., before B
+  was no subclass of A, but afterwards it is.
 \item Else, a new entity is created as superclass of the entities, and the
   property is pulled up.
 \end{compactenum}
@@ -340,12 +334,12 @@ properties of all classes, and then acts according these heuristics.
 The evaluation results requested by the case description
 \cite{cdrestructcasedesc} are summarized in Table~\ref{tab:evaluation}.
 
-With 110 lines of code (core + extension task), the FunnyQT solution is
-reasonably \emph{concise} given that its heuristics are more advanced than the
-case description required.  Due to these heuristics, its \emph{effectiveness}
-is 100\% for all provided and several additional models (such as the ones
-depicted in Figure~\ref{fig:heuristics-example}).  The case description defines
-the \emph{complexitiy} as the sum of operator occurences, type references, and
+With 110 LOC (core + extension task), the solution is quite \emph{concise}
+given that its heuristics are more advanced than what was demanded.  Due to
+these heuristics, its \emph{effectiveness} is 100\% for all provided and
+several additional models (e.g., the ones in
+Figure~\ref{fig:heuristics-example}).  The case description defines the
+\emph{complexitiy} as the sum of operator occurences, type references, and
 feature references.  The FunnyQT solution consists of 161 function calls (or
 calls to special forms or macros), 4 type references, and 25 feature
 references.  The \emph{development effort} has been about 8 hours for the
@@ -372,13 +366,13 @@ solution plus 2 hours for writing unit tests for it.
   \label{tab:evaluation}
 \end{table}
 
-The detailed \emph{execution times} rounded to whole milliseconds on SHARE for
-all provided models are depicted in Table\ref{tab:exec-times}.  The largest
-provided model consisting of 100000 elements\footnote{The models
+The detailed \emph{execution times} on SHARE for all provided models are
+depicted in Table\ref{tab:exec-times}.  The largest provided model
+\verb|testcase2_10000| consisting of 100000 elements\footnote{The models
   \textsf{testcase2\_n} actually consist of $10\times n$ elements.} can be
 processed in about six seconds which is more than a thousand times faster than
-the reference UML-RSDS solution.  It can be seen that the additional multiple
-inheritance rule has only little influence on the execution times.
+the reference UML-RSDS solution.  The multiple inheritance extension rule has
+only little influence on the execution times.
 
 \begin{table}[htb]
   \footnotesize
