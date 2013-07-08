@@ -238,17 +238,15 @@ are merged into one item.
 
 \paragraph{Restructuring Rules.}
 
-The solution defines the function \verb|pull-up-helper| shown in
-Listing~\ref{lst:pull-up-helper} which can implement all three restructuring
-rules by parameterizing it appropriately.  The function receives the root
-\verb|model| object \verb|mo|, a superclass \verb|super|, and a set of entities
-\verb|classes| in which to find common properties,.  In case of rule 1 and rule
-2, \verb|super| is the superclass of all \verb|classes|, and in case of rule 3,
-the \verb|super| parameter is \verb|nil| and \verb|classes| is the set of
-top-level classes.
+The solution defines the function \verb|pull-up-helper| shown in the next
+listing which can implement all three restructuring rules by parameterizing it
+appropriately.  The function receives the root \verb|model| object \verb|mo|, a
+superclass \verb|super|, and a set of entities \verb|classes| in which to find
+common properties,.  In case of rule 1 and rule 2, \verb|super| is the
+superclass of all \verb|classes|, and in case of rule 3, the \verb|super|
+parameter is \verb|nil| and \verb|classes| is the set of top-level classes.
 
-\begin{listing}[htbp]
-  \begin{clojurecode}
+\begin{clojurecode}
 (defn pull-up-helper [mo super classes]
   (when (seq classes)
     (when-let [[pnts entities] (first (common-props classes))]
@@ -264,10 +262,7 @@ top-level classes.
               (make-generalization! mo s nc))
             (when super (make-generalization! mo nc super))
             true))))))
-  \end{clojurecode}
-  \caption{A restructuring function able to implement all three rules}
-  \label{lst:pull-up-helper}
-\end{listing}
+\end{clojurecode}
 
 When the set of classes is not empty (line 2), and if there are common
 properties (line 3), the largest list of common properties among the lists of
