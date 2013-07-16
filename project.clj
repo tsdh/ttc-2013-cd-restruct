@@ -9,4 +9,4 @@
                    :maximum :maximum
                    :stress  :stress
                    :all     (constantly true)}
-  :jvm-opts ["-Xms800m" "-Xmx800m"])
+  :jvm-opts ^:replace ["-Xms800m" "-Xmx800m"])
