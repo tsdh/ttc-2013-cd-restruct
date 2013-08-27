@@ -7,7 +7,6 @@
 \usepackage[T1]{fontenc}
 \usepackage{hyperref}
 \usepackage{paralist}
-\usepackage{verbatim}
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{placeins}
@@ -17,12 +16,12 @@
 \def\verbatim@font{\ttfamily\small}
 \makeatother
 
-\usepackage{minted}
-\newminted{clojure}{fontsize=\footnotesize,frame=lines,linenos}
-
+\usepackage{fancyvrb}
+\usepackage{color}
+\input{pyg}
 
 \title{Solving the Class Diagram Restructuring Transformation Case with FunnyQT}
-\author{Dipl.-Inform. Tassilo Horn
+\author{Tassilo Horn
   \email{horn@uni-koblenz.de}
   \institute{Institute for Software Technology, University Koblenz-Landau, Germany}}
 
@@ -96,21 +95,13 @@ new \verb|Generalization| between a sub- and its super-entity, and there's
 The function \verb|prop-type-set| gets an \verb|Entity e| and returns its set
 of \verb|[prop-name type]| tuples, i.e., there's one such tuple for any owned
 attribute of \verb|e|.
-\begin{clojurecode}
-(defn prop-type-set [e]
-  (set (map (fn [p] [(eget p :name) (eget p :type)])
-            (eget e :ownedAttribute))))
-\end{clojurecode}
+\input{lst/01}
 The \verb|filter-by-properties| function gets a collection of
 \verb|[prop-name type]| tuples via its \verb|pnts| parameter, and a collection
 of entities via its \verb|entities| parameter.  It returns the subset of
 \verb|entities| for which every entity defines all of the given properties with
 identical types.
-\begin{clojurecode}
-(defn filter-by-properties [pnts entities]
-  (set (filter (fn [e] (forall? #(member? % (prop-type-set e)) pnts))
-               entities)))
-\end{clojurecode}
+\input{lst/02}
 
 
 \paragraph{Restructuring Heuristics.}
@@ -164,36 +155,15 @@ them according to the heuristics.  It is by far the most complex function of
 the transformation.  The function receives a set of entities via its
 \verb|classes| parameter and returns the properties common to a maximal subset
 of these entities.
-\begin{clojurecode}
-(defn common-props [classes]
-  (let [pes (set (map (fn [pnt] [pnt (filter-by-properties [pnt] classes)])
-                      (set (mapcat prop-type-set classes))))
-        freq-map (apply hash-map
-                        (mapcat (fn [[_ ents]] [ents (count (filter #(= ents (second %))
-                                                                    pes))])
-                                pes))
-        collapse (fn collapse [aes]
-                   (when-let [[pnt entities] (first aes)]
-                     (let [[s r] (split-with (fn [[_ ents]] (= entities ents)) aes)]
-                       (cons [(map first s) entities]
-                             (lazy-seq (collapse r))))))]
-    (collapse (into (sorted-set-by
-                     (fn [[_ aes :as a] [_ bes :as b]]
-                       (let [x (- (count bes) (count aes))]
-                         (if (zero? x)
-                           (let [x (- (freq-map bes) (freq-map aes))]
-                             (if (zero? x) (compare a b) x))
-                           x))))
-                    pes))))
-\end{clojurecode}
+\input{lst/03}
 In line 2, \verb|pes| is bound to a set of tuples \verb|[pnt entity-set]|,
 where \verb|pnt| is a \verb|[prop-name type]| tuple and \verb|entity-set| is
 the set of all entities declaring such a property.  That is, \verb|pes| has the
 following form\footnote{\textsf{\#\{...\} is a Clojure set literal.}}.
-\begin{clojurecode*}{linenos=none}
+\begin{Verbatim}[fontsize=\footnotesize]
 #{[[pn1 t1] #{e1 e2 e3}]     [[pn4 t2] #{e2 e3 e4}]
   [[pn2 t2] #{e2 e3 e4 e5}]  [[pn3 t2] #{e1 e2 e3}]}
-\end{clojurecode*}
+\end{Verbatim}
 In line 4, \verb|freq-map| is bound to a hash-map that maps to each set of
 entities occuring in the items of \verb|pes| the number of occurences in there.
 This map is used to implement the second heuristic.
@@ -217,10 +187,10 @@ and \verb|bes|, respectively, and then performs these checks:
 As a result, the sorted set has the following structure, i.e., items with
 larger entity sets are sorted before items with smaller entity sets.  The item
 with \verb|pn2| is sorted before the others because it is shared by 4 entities.
-\begin{clojurecode*}{linenos=none}
+\begin{Verbatim}[fontsize=\footnotesize]
 #{[[pn2 t2] #{e2 e3 e4 e5}]  [[pn1 t1] #{e1 e2 e3}]
   [[pn3 t2] #{e1 e2 e3}]     [[pn4 t2] #{e2 e3 e4}]}
-\end{clojurecode*}
+\end{Verbatim}
 In case of equally large entity sets, the number of occurences of
 the entity sets determines the sorting order, e.g., the items with \verb|pn1|
 and \verb|pn2| are sorted before the item with \verb|pn4|, because their entity
@@ -229,9 +199,9 @@ sets occur twice whereas the entity set of \verb|pn4| occurs only once.
 Finally, this set is mangled by the local \verb|collapse| function defined in
 lines 8 to 12.  It simply collapses (merges) adjacent items with equal entity
 sets, thus the result of the function has the following form.
-\begin{clojurecode*}{linenos=none}
+\begin{Verbatim}[fontsize=\footnotesize]
 ([([pn2 t2]) #{e2 e3 e4 e5}],    [([pn1 t1] [pn3 t2]) #{e1 e2 e3}],    [([pn4 t2]) #{e2 e3 e4}]}
-\end{clojurecode*}
+\end{Verbatim}
 Because the items of \verb|pn1| and \verb|pn3| have the same entity set, they
 are merged into one item.
 
@@ -245,39 +215,23 @@ superclass \verb|super|, and a set of entities \verb|classes| in which to find
 common properties,.  In case of rule 1 and rule 2, \verb|super| is the
 superclass of all \verb|classes|, and in case of rule 3, the \verb|super|
 parameter is \verb|nil| and \verb|classes| is the set of top-level classes.
-
-\begin{clojurecode}
-(defn pull-up-helper [mo super classes]
-  (when (seq classes)
-    (when-let [[pnts entities] (first (common-props classes))]
-      (if (and super (= classes entities))
-        (pull-up mo pnts entities super)  ;; rule 1
-        (when (> (count entities) 1)
-          (let [nc (make-entity! mo)]     ;; rule 2 if super, else rule 3
-            (pull-up mo pnts entities nc)
-            (doseq [s entities]
-              (doseq [oldgen (eget s :generalization)
-                      :when (= super (adj oldgen :general))]
-                (edelete! oldgen))
-              (make-generalization! mo s nc))
-            (when super (make-generalization! mo nc super))
-            true))))))
-\end{clojurecode}
-
-When the set of classes is not empty (line 2), and if there are common
-properties (line 3), the largest list of common properties among the lists of
-properties declared by a maximal number of entities is bound to \verb|pnts|,
-and the entities declaring these properties are bound to \verb|entities|.  In
-case \verb|entities| equals the set of all \verb|classes| (line 4), the
-situation is that of rule 1, and all properties in \verb|pnts| are pulled up to
-\verb|super| (line 5).  In the other case, the maximal set of common properties
-is shared by a maximal but strict subset of \verb|classes|.  Here, it has to be
-ensured that there are more than one entity declaring these properties (line
-6), because else the inheritance depth would increase without removing
-declarations.  Then, the situation is that of rule 2 if \verb|super| is
-non-nil, and the situation is that of rule 3 if \verb|super| is nil.  In any
-case, all shared properties are pulled into a new entity \verb|nc|, and the
-generalizations are adapted.
+\input{lst/04} When the set of classes is not empty (line 2), and if there are
+common properties (line 3), the largest list of common properties among the
+lists of properties declared by a maximal number of entities is bound to
+\verb|pnts|, and the entities declaring these properties are bound to
+\verb|entities|.  In case \verb|entities| equals the set of all \verb|classes|
+(line 4), the situation is that of rule 1, and all properties in \verb|pnts|
+are pulled up to \verb|super| (line 5).  In the other case, the maximal set of
+common properties is shared by a maximal but strict subset of \verb|classes|.
+Here, it has to be ensured that there are more than one entity declaring these
+properties (line 6), because else the inheritance depth would increase without
+removing declarations.  Then, the situation is that of rule 2 if \verb|super|
+is non-nil, and the situation is that of rule 3 if \verb|super| is nil.  In any
+case, all shared properties are pulled into a new entity \verb|nc| (line 8),
+and the generalizations are adapted by deleting the old generalizations to
+\verb|super| (lines 10-12), creating new generalization to the new superclass
+\verb|nc| (line 13), and making \verb|super| a superclass of \verb|nc| (line
+14).
 
 The overall transformation function simply calls the \verb|pull-up-helper|
 function shown above with appropriate parametrization as long as it can find a
@@ -310,16 +264,18 @@ duplicated properties of all classes, and then acts according these heuristics.
 The evaluation results requested by the case description
 \cite{cdrestructcasedesc} are summarized in Table~\ref{tab:evaluation}.
 
-With 110 LOC (core + extension task), the solution is quite \emph{concise}
+With 110 LOC (core + extension task), the solution's \emph{size} is quite good
 given that its heuristics are more advanced than what was demanded.  Due to
 these heuristics, its \emph{effectiveness} is 100\% for all provided and
 several additional models (e.g., the ones in
 Figure~\ref{fig:heuristics-example}).  The case description defines the
-\emph{complexitiy} as the sum of operator occurences, type references, and
+\emph{complexity} as the sum of operator occurences, type references, and
 feature references.  The FunnyQT solution consists of 161 function calls (or
 calls to special forms or macros), 4 type references, and 25 feature
 references.  The \emph{development effort} has been about 8 hours for the
-solution plus 2 hours for writing unit tests for it.
+solution plus 2 hours for writing unit tests for it.  The most challenging and
+time-consuming task has been developing heuristics that achieve 100\%
+effectiveness in all models used for testing.
 
 \begin{table}[htb]
   \footnotesize
@@ -373,6 +329,13 @@ the reference UML-RSDS solution.
   (\verb|testcase2_200000|) is about the maximum capability for the solution.
 \end{sloppypar}
 
+The solution of this case uses only a tiny part of FunnyQT's features because
+it was best tackled algorithmically.  But next to the model querying and model
+manipulation APIs used here, FunnyQT provides a model-to-model transformation
+API, APIs for pattern matching and programmed graph transformations, and there
+are more features to come, making FunnyQT adequate for a very divergent set of
+transformation tasks.
+
 \FloatBarrier
 
 \bibliographystyle{alpha}
@@ -384,127 +347,7 @@ the reference UML-RSDS solution.
 \section{The Complete Source Code of the Solution}
 \label{sec:complete-source-code}
 
-\begin{clojurecode}
-(defn add-prop! [mo e pn t]
-  (let [p (ecreate! 'Property)]
-    (eadd! mo :propertys p)
-    (eset! p :name pn)
-    (eset! p :type t)
-    (eadd! e :ownedAttribute p)))
-
-(defn delete-prop! [e pn]
-  (let [p (first (filter #(= pn (eget % :name))
-                         (eget e :ownedAttribute)))]
-    (edelete! p)
-    (eremove! e :ownedAttribute p)))
-
-(defn pull-up [mo pnts froms to]
-  (doseq [[pn t] pnts]
-    (add-prop! mo to pn t)
-    (doseq [s froms]
-      (delete-prop! s pn)))
-  true)
-
-(defn make-generalization! [mo sub super]
-  (let [gen (ecreate! 'Generalization)]
-    (eadd! mo :generalizations gen)
-    (eset! gen :general super)
-    (eset! gen :specific sub)))
-
-(defn make-entity! [mo]
-  (let [e (ecreate! 'Entity)]
-    (eadd! mo :entitys e)
-    (eset! e :name (str (gensym "NewClass")))))
-
-(defn prop-type-set [e]
-  (set (map (fn [p] [(eget p :name) (eget p :type)])
-            (eget e :ownedAttribute))))
-
-(defn filter-by-properties [pnts entities]
-  (set (filter (fn [e]
-                 (forall? #(member? % (prop-type-set e)) pnts))
-               entities)))
-
-(defn common-props [classes]
-  (let [pes (set (map (fn [pnt]
-                        [pnt (filter-by-properties [pnt] classes)])
-                      (set (mapcat prop-type-set classes))))
-        freq-map (apply hash-map
-                        (mapcat (fn [[_ ents]]
-                                  [ents (count (filter #(= ents (second %))
-                                                       pes))])
-                                pes))
-        collapse (fn collapse [aes]
-                   (when-let [[pnt entities] (first aes)]
-                     (let [[s r] (split-with (fn [[_ ents]]
-                                               (= entities ents)) aes)]
-                       (cons [(map first s) entities]
-                             (lazy-seq (collapse r))))))]
-    (collapse (into (sorted-set-by
-                     (fn [[_ aes :as a] [_ bes :as b]]
-                       (let [x (- (count bes) (count aes))]
-                         (if (zero? x)
-                           (let [x (- (freq-map bes) (freq-map aes))]
-                             (if (zero? x)
-                               (compare a b)
-                               x))
-                           x))))
-                    pes))))
-
-(defn pull-up-helper [mo super classes]
-  (when (seq classes)
-    (when-let [[pnts entities] (first (common-props classes))]
-      (if (and super (= classes entities))
-        (pull-up mo pnts entities super)  ;; rule 1
-        (when (> (count entities) 1)
-          (let [nc (make-entity! mo)]     ;; if super rule 2, else rule 3
-            (pull-up mo pnts entities nc)
-            (doseq [s entities]
-              (doseq [oldgen (eget s :generalization)
-                      :when (= super (adj oldgen :general))]
-                (edelete! oldgen))
-              (make-generalization! mo s nc))
-            (when super (make-generalization! mo nc super))
-            true))))))
-
-(defn exploit-multiple-inheritance [mo]
-  (doseq [[pnts entities] (common-props (eget mo :entitys))
-          :while (> (count entities) 1)]
-    (let [[nc reuse]
-          (if-let [top (first (filter
-                               #(and (empty? (eget % :generalization))
-                                     (re-matches #"NewClass.*" (eget % :name)))
-                               entities))]
-            [top true]
-            [(make-entity! mo) false])]
-      (doseq [[pn t] pnts]
-        (when-not reuse
-          (add-prop! mo nc pn t))
-        (doseq [e (remove #(= nc %) entities)]
-          (delete-prop! e pn)
-          (make-generalization! mo e nc))))))
-
-(defn pull-up-1-2 [mo]
-  (loop [classes (eget mo :entitys), applied false]
-    (if (seq classes)
-      (let [super (first classes)
-            result (pull-up-helper
-                    mo super (set (adjs super :specialization :specific)))]
-        (recur (rest classes) (or result applied)))
-      applied)))
-
-(defn pull-up-3 [mo]
-  (pull-up-helper mo nil (set (remove #(seq (eget % :generalization))
-                                      (eget mo :entitys)))))
-
-(defn pull-up-attributes [model multi-inheritance]
-  (let [mo (the (eallobjects model 'model))]
-    (iteratively #(let [r (pull-up-1-2 mo)]
-                    (or (pull-up-3 mo) r)))
-    (when multi-inheritance (exploit-multiple-inheritance mo))
-    model))
-\end{clojurecode}
-
+\input{lst/complete}
 
 \end{document}
 
